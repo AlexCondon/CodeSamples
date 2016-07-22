@@ -1,0 +1,88 @@
+using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+using System;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.IO;
+
+
+public class Save : MonoBehaviour {
+
+    //Create a static instance to be used in other scripts
+	public static Save SaveSystem;
+
+	void Awake()
+	{
+		if(SaveSystem==null)
+		{
+			DontDestroyOnLoad(gameObject);
+			SaveSystem = this;
+			load();
+		}
+		else if(SaveSystem!=null)
+		{
+			Destroy(gameObject);
+		}
+	}
+
+    //Saves all data to a hard drive the device is using
+	public void save()
+	{
+        //Creates a formatter and a file within the devices harddrive
+		BinaryFormatter bf = new BinaryFormatter();
+		FileStream file = File.Create(Application.persistentDataPath + "/playerInfo.preserve");
+
+		PlayerData data = new PlayerData();
+
+        //Overwrites the users current data with the new up to date data
+		data.Energy = MasterVariables.Energy;
+		data.Money = MasterVariables.Money;
+		data.Experience = MasterVariables.Experience;
+		data.AvailableToBuild = MasterVariables.AvailableToBuild;
+		data.PlayedBefore = MasterVariables.PlayedBefore;
+		data.BuildingsOwned = MasterVariables.BuildingsOwned;
+		PlayerPrefsX.SetBoolArray("Unlocked", MasterVariables.Unlocked);
+
+        //Serializes and closes the file being altered
+		bf.Serialize(file,data);
+		file.Close();
+		
+	}
+	
+	public void load()
+	{
+        //Checks for existing save file
+		if(File.Exists(Application.persistentDataPath + "/playerInfo.preserve"))
+		{
+			BinaryFormatter bf = new BinaryFormatter();
+			FileStream file = File.Open (Application.persistentDataPath + "/playerInfo.preserve",FileMode.Open);
+			PlayerData data = (PlayerData)bf.Deserialize(file);
+			file.Close ();
+
+
+            //Initializes Mastervaribles with existing saved data
+			MasterVariables.Energy = data.Energy;
+			MasterVariables.Money = data.Money;
+			MasterVariables.Experience = data.Experience;
+			MasterVariables.AvailableToBuild = data.AvailableToBuild;
+			MasterVariables.Unlocked = PlayerPrefsX.GetBoolArray("Unlocked");
+			MasterVariables.PlayedBefore = data.PlayedBefore;
+			MasterVariables.BuildingsOwned = data.BuildingsOwned;
+		}
+	}
+	
+	[Serializable]
+
+    //The variables the game needs to save
+    class PlayerData
+	{
+		public int Energy;
+		public int Money;
+		public int Experience;
+		public int AvailableToBuild;
+		public bool[] Unlocked;
+		public int BuildingsOwned;
+		public bool PlayedBefore;
+
+	}
+}
