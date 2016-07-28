@@ -1,0 +1,135 @@
+package com.example.alex.inhlaemess;
+
+import android.app.Activity;
+import android.content.ComponentName;
+import android.content.Intent;
+import android.content.ServiceConnection;
+import android.os.Bundle;
+import android.os.IBinder;
+import android.provider.ContactsContract;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.Toast;
+
+import com.example.alex.interfacer.Manager;
+import com.example.alex.messagingservice.MessagingService;
+
+import java.io.UnsupportedEncodingException;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
+
+
+public class Logging_In extends Activity {
+
+    public EditText username;
+    public EditText password;
+    //public String defaultusername = "Default";
+    //public String defaultpassword = "Default";
+    public Manager connection;
+    public String Failed = "authentication failed";
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        username = (EditText) findViewById(R.id.usernameInput);
+        password = (EditText) findViewById(R.id.passwordInput);
+
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    public void btnLoginOnClickHandler(View view) {
+
+        if(connection == null)
+        {
+            Toast.makeText(Logging_In.this, "No Service Detected", Toast.LENGTH_SHORT).show();
+        }
+
+        else if (connection.isConnected() == false)
+        {
+            Toast.makeText(Logging_In.this, "No Service Detected", Toast.LENGTH_SHORT).show();
+        }
+        else {
+            if (username.length() > 0 && password.length() > 0) {
+
+                Thread logginginThread = new Thread() {
+                    @Override
+                    public void run() {
+                        String loginresult = null;
+                        try {
+                                loginresult=connection.authenticateUser(username.getText().toString(), password.getText().toString());
+                            }
+                        catch (UnsupportedEncodingException e){
+                            e.printStackTrace();
+                        }
+
+                        if (loginresult == null || loginresult.equals(Failed))
+                        {
+                            Toast.makeText(getApplicationContext(), "Make Sure Password and Username are correct", Toast.LENGTH_SHORT).show();
+                        }
+
+                        else {
+                            Intent i = new Intent();
+                            startActivity(i);
+                            Logging_In.this.finish();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public void btnRegistrationOnClickHandler(View view) {
+
+        setContentView(R.layout.registration);
+
+        Intent i = new Intent(Logging_In.this, Registration.class);
+        startActivity(i);
+    }
+
+    private ServiceConnection sConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+
+            connection = ((MessagingService.IMBinder) service).getService();
+
+            if (connection.isAuthenticated() == true) {
+                Intent i = new Intent(Logging_In.this, Profile.class);
+                startActivity(i);
+                Logging_In.this.finish();
+            }
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+
+            connection = null;
+            Toast.makeText(Logging_In.this, "No Service Detected", Toast.LENGTH_SHORT).show();
+        }
+    }
+}
